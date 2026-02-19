@@ -152,6 +152,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 600,
     show: false,
+    title: `Palm Karofler Labels v${app.getVersion()}`,
     backgroundColor: '#0f172a',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

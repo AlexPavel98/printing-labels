@@ -26,6 +26,14 @@ jobs:
       - name: Build Vite app
         run: npm run build:vite
 
+      - name: Verify dist-electron contents
+        shell: pwsh
+        run: |
+          echo "=== dist-electron/main.js ==="
+          echo "Line count: $((Get-Content dist-electron/main.js).Count)"
+          echo "File size:  $((Get-Item dist-electron/main.js).Length) bytes"
+          echo "First line: $((Get-Content dist-electron/main.js)[0])"
+
       - name: Build Windows installer
         run: npx electron-builder --win --x64
         env:
