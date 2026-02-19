@@ -2,6 +2,7 @@
   "name": "palm-karofler-labels",
   "version": "1.0.0",
   "description": "Barcode label generation app for Palm Karofler farm",
+  "author": "Palm Karofler",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
