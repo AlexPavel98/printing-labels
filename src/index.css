@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --scrollbar-track: #f1f5f9;
+    --scrollbar-thumb: #cbd5e1;
+    --scrollbar-thumb-hover: #94a3b8;
+  }
+
+  .dark {
+    --scrollbar-track: #1e293b;
+    --scrollbar-thumb: #334155;
+    --scrollbar-thumb-hover: #475569;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm
+           transition-all duration-150 cursor-pointer focus:outline-none
+           focus:ring-2 focus:ring-offset-2 focus:ring-brand-500
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand-600 hover:bg-brand-700 text-white
+           focus:ring-brand-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-slate-200 hover:bg-slate-300 text-slate-800
+           dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100
+           focus:ring-slate-400;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 hover:bg-red-700 text-white
+           focus:ring-red-500;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800
+           text-slate-600 dark:text-slate-400;
+  }
+
+  .card {
+    @apply bg-white dark:bg-slate-800 rounded-xl border border-slate-200
+           dark:border-slate-700 shadow-sm;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600
+           bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100
+           placeholder-slate-400 dark:placeholder-slate-500
+           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
+           text-sm transition-colors;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+
+  .badge-green {
+    @apply badge bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
+  }
+
+  .badge-blue {
+    @apply badge bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400;
+  }
+
+  .badge-yellow {
+    @apply badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400;
+  }
+
+  .badge-purple {
+    @apply badge bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400;
+  }
+
+  .badge-orange {
+    @apply badge bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400;
+  }
+
+  .badge-danger {
+    @apply badge bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
+  }
+}
+
+/* Print styles - only labels visible */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #print-area,
+  #print-area * {
+    visibility: visible;
+  }
+
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  @page {
+    margin: 0;
+  }
+}
