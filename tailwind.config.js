@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
   ],
   darkMode: 'class',
   theme: {
@@ -19,12 +19,12 @@ export default {
           700: '#15803d',
           800: '#166534',
           900: '#14532d',
-        }
+        },
       },
       fontFamily: {
         sans: ['Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['Consolas', 'Courier New', 'monospace']
-      }
+        mono: ['Consolas', 'Courier New', 'monospace'],
+      },
     },
   },
   plugins: [],
