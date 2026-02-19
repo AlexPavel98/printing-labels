@@ -9,54 +9,26 @@ export default defineConfig({
     react(),
     electron([
       {
-        // Main process
         entry: 'electron/main.js',
         vite: {
           build: {
             outDir: 'dist-electron',
-            lib: {
-              entry: 'electron/main.js',
-              formats: ['cjs'],
-            },
             rollupOptions: {
-              external: [
-                'better-sqlite3',
-                'electron',
-                'path',
-                'fs',
-                'os',
-                'child_process',
-                'crypto',
-                'http',
-                'https',
-                'url',
-                'util',
-              ],
-              output: {
-                entryFileNames: 'main.js',
-              },
+              external: ['better-sqlite3', 'electron', 'path', 'fs', 'os'],
+              output: { format: 'cjs', entryFileNames: '[name].js' },
             },
           },
         },
       },
       {
-        // Preload script
         entry: 'electron/preload.js',
-        onstart(options) {
-          options.reload()
-        },
+        onstart: (o) => o.reload(),
         vite: {
           build: {
             outDir: 'dist-electron',
-            lib: {
-              entry: 'electron/preload.js',
-              formats: ['cjs'],
-            },
             rollupOptions: {
               external: ['electron'],
-              output: {
-                entryFileNames: 'preload.js',
-              },
+              output: { format: 'cjs', entryFileNames: '[name].js' },
             },
           },
         },
@@ -64,10 +36,6 @@ export default defineConfig({
     ]),
     renderer(),
   ],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
+  resolve: { alias: { '@': path.resolve(__dirname, './src') } },
   base: './',
 })
