@@ -113,19 +113,13 @@ export function buildPrintHTML(labels, options = {}) {
     font-weight: 800;
     color: #111827;
     line-height: 1.15;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .company-address {
-    font-size: ${(heightMm * 0.072 / 0.353).toFixed(1)}pt;
+    font-size: ${(heightMm * 0.055 / 0.353).toFixed(1)}pt;
     font-weight: 400;
     color: #6b7280;
     line-height: 1.3;
-    margin-top: ${(heightMm * 0.010).toFixed(2)}mm;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    margin-top: ${(heightMm * 0.008).toFixed(2)}mm;
   }
   .supplier-row {
     font-size: ${(heightMm * 0.088 / 0.353).toFixed(1)}pt;

@@ -28,7 +28,7 @@ export default function LabelPreview({
 
   // Font sizes (screen px)
   const fCompany      = Math.round(H * 0.115)
-  const fAddress      = Math.round(H * 0.072)
+  const fAddress      = Math.round(H * 0.055)
   const fSupplier     = Math.round(H * 0.088)
   const fCode         = Math.round(H * 0.078)
   const fDate         = Math.round(H * 0.065)
