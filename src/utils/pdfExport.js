@@ -41,9 +41,12 @@ export function buildPrintHTML(labels, options = {}) {
 
     const maxBarcodeH = `${(heightMm * 0.36).toFixed(1)}mm`
 
+    const procLabel = PROCESS_LABELS[processType] || processType || ''
+
     const bodyHTML = isIdentical
       ? `<div class="body-identical">
           <div class="barcode-col">
+            <div class="code-number">${code}</div>
             ${svgStr.replace('<svg', `<svg style="max-width:100%;max-height:${maxBarcodeH};"`)}
           </div>
           <div class="counter-col">
@@ -54,10 +57,9 @@ export function buildPrintHTML(labels, options = {}) {
           </div>
         </div>`
       : `<div class="body-consecutive">
+          <div class="code-number">${code}</div>
           ${svgStr.replace('<svg', `<svg style="max-width:80%;max-height:${maxBarcodeH};"`)}
         </div>`
-
-    const procLabel = PROCESS_LABELS[label.processType] || label.processType || ''
 
     return `<div class="label${isLast ? ' last' : ''}">
   <div class="header">
@@ -67,11 +69,8 @@ export function buildPrintHTML(labels, options = {}) {
   </div>
   ${bodyHTML}
   <div class="footer">
-    <div class="date">${date || ''}</div>
-    <div class="footer-code-row">
-      <span class="proc-label">${procLabel}</span>
-      <span class="code-text">${code}</span>
-    </div>
+    <span class="date">${date || ''}</span>
+    <span class="proc-label">${procLabel}</span>
   </div>
 </div>`
   }).join('\n')
@@ -144,13 +143,26 @@ export function buildPrintHTML(labels, options = {}) {
     text-overflow: ellipsis;
   }
 
+  /* ── Shared: human-readable code number ── */
+  .code-number {
+    font-size: ${(heightMm * 0.078 / 0.353).toFixed(1)}pt;
+    font-weight: 700;
+    color: #111827;
+    font-family: 'Courier New', 'Consolas', monospace;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    text-align: center;
+  }
+
   /* ── Consecutive body ── */
   .body-consecutive {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: ${(heightMm * 0.025).toFixed(2)}mm ${(widthMm * 0.04).toFixed(2)}mm;
+    gap: ${(heightMm * 0.02).toFixed(2)}mm;
+    padding: ${(heightMm * 0.022).toFixed(2)}mm ${(widthMm * 0.04).toFixed(2)}mm;
     min-height: 0;
     overflow: hidden;
   }
@@ -165,8 +177,10 @@ export function buildPrintHTML(labels, options = {}) {
   .barcode-col {
     flex: 0 0 65%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: ${(heightMm * 0.02).toFixed(2)}mm;
     padding: ${(heightMm * 0.022).toFixed(2)}mm ${(widthMm * 0.02).toFixed(2)}mm;
     border-right: 0.3pt solid #e5e7eb;
     overflow: hidden;
@@ -197,8 +211,8 @@ export function buildPrintHTML(labels, options = {}) {
     border-top: 0.3pt solid #d1d5db;
     padding: ${(heightMm * 0.022).toFixed(2)}mm ${(widthMm * 0.04).toFixed(2)}mm;
     display: flex;
-    flex-direction: column;
-    gap: ${(heightMm * 0.006).toFixed(2)}mm;
+    align-items: center;
+    justify-content: space-between;
     flex-shrink: 0;
   }
   .date {
@@ -207,24 +221,10 @@ export function buildPrintHTML(labels, options = {}) {
     color: #9ca3af;
     line-height: 1;
   }
-  .footer-code-row {
-    display: flex;
-    align-items: baseline;
-    gap: ${(widthMm * 0.025).toFixed(2)}mm;
-  }
   .proc-label {
     font-size: ${(heightMm * 0.065 / 0.353).toFixed(1)}pt;
     font-weight: 600;
     color: #6b7280;
-    line-height: 1;
-  }
-  .code-text {
-    font-size: ${(heightMm * 0.078 / 0.353).toFixed(1)}pt;
-    font-weight: 700;
-    color: #111827;
-    font-family: 'Courier New', 'Consolas', monospace;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
     line-height: 1;
   }
 </style>

@@ -104,13 +104,18 @@ export default function LabelPreview({
         /* ── Identical: barcode left │ counter right ── */
         <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
           <div style={{
-            flex:            '0 0 65%',
-            display:         'flex',
-            alignItems:      'center',
-            justifyContent:  'center',
-            padding:         `${Math.round(pV * 0.6)}px ${Math.round(pH * 0.5)}px`,
-            borderRight:     '1px solid #e5e7eb',
+            flex:           '0 0 65%',
+            display:        'flex',
+            flexDirection:  'column',
+            alignItems:     'center',
+            justifyContent: 'center',
+            gap:            `${Math.round(H * 0.02)}px`,
+            padding:        `${Math.round(pV * 0.4)}px ${Math.round(pH * 0.5)}px`,
+            borderRight:    '1px solid #e5e7eb',
           }}>
+            <div style={{ fontSize: `${fCode}px`, fontWeight: '700', color: '#111827', fontFamily: "'Consolas', 'Courier New', monospace", letterSpacing: '0.05em', lineHeight: 1 }}>
+              {code}
+            </div>
             <svg ref={barcodeRef} style={{ maxWidth: '100%', maxHeight: `${barH}px` }} />
           </div>
           <div style={{
@@ -132,50 +137,41 @@ export default function LabelPreview({
           </div>
         </div>
       ) : (
-        /* ── Consecutive: barcode centered, 80% wide ── */
+        /* ── Consecutive: code centered above barcode ── */
         <div style={{
           flex:           1,
           display:        'flex',
+          flexDirection:  'column',
           alignItems:     'center',
           justifyContent: 'center',
-          padding:        `${Math.round(pV * 0.5)}px ${pH}px`,
+          gap:            `${Math.round(H * 0.02)}px`,
+          padding:        `${Math.round(pV * 0.4)}px ${pH}px`,
           minHeight:      0,
         }}>
+          <div style={{ fontSize: `${fCode}px`, fontWeight: '700', color: '#111827', fontFamily: "'Consolas', 'Courier New', monospace", letterSpacing: '0.05em', lineHeight: 1 }}>
+            {code}
+          </div>
           <svg ref={barcodeRef} style={{ maxWidth: '80%', maxHeight: `${barH}px` }} />
         </div>
       )}
 
-      {/* ── Footer: date row / process-type + code row ── */}
+      {/* ── Footer: date left | process type right ── */}
       <div
         style={{
-          borderTop:     '1px solid #d1d5db',
-          padding:       `${Math.round(pV * 0.4)}px ${pH}px`,
-          display:       'flex',
-          flexDirection: 'column',
-          gap:           `${Math.round(H * 0.006)}px`,
-          flexShrink:    0,
+          borderTop:      '1px solid #d1d5db',
+          padding:        `${Math.round(pV * 0.4)}px ${pH}px`,
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'space-between',
+          flexShrink:     0,
         }}
       >
-        {/* row 1: date */}
-        <div style={{ fontSize: `${fDate}px`, color: '#9ca3af', fontWeight: '400', lineHeight: 1 }}>
+        <span style={{ fontSize: `${fDate}px`, color: '#9ca3af', fontWeight: '400', lineHeight: 1 }}>
           {date}
-        </div>
-        {/* row 2: process type · code */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: `${Math.round(pH * 0.5)}px` }}>
-          <span style={{ fontSize: `${fDate}px`, fontWeight: '600', color: '#6b7280', lineHeight: 1 }}>
-            {PROCESS_LABELS[processType] || processType}
-          </span>
-          <span style={{
-            fontSize:      `${fCode}px`,
-            fontWeight:    '700',
-            color:         '#111827',
-            fontFamily:    "'Consolas', 'Courier New', monospace",
-            letterSpacing: '0.05em',
-            lineHeight:    1,
-          }}>
-            {code}
-          </span>
-        </div>
+        </span>
+        <span style={{ fontSize: `${fDate}px`, fontWeight: '600', color: '#6b7280', lineHeight: 1 }}>
+          {PROCESS_LABELS[processType] || processType}
+        </span>
       </div>
     </div>
   )
