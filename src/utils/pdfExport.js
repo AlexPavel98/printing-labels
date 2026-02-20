@@ -9,7 +9,7 @@ const PROCESS_LABELS = {
   L:  'Lot / Batch',
 }
 
-function generateBarcodeDataURL(code, widthMm, heightMm, dpi = 150) {
+function generateBarcodeDataURL(code, widthMm, heightMm, dpi = 300) {
   const pxPerMm = dpi / 25.4
   const canvas  = document.createElement('canvas')
   try {
@@ -17,7 +17,7 @@ function generateBarcodeDataURL(code, widthMm, heightMm, dpi = 150) {
       format:       'CODE128',
       displayValue: false,
       margin:       0,
-      width:        Math.max(1, Math.round(pxPerMm * 0.55)),
+      width:        Math.max(2, Math.round(pxPerMm * 0.55)),
       height:       Math.round(heightMm * pxPerMm * 0.35),
       background:   '#ffffff',
       lineColor:    '#000000',
