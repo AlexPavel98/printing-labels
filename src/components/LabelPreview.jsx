@@ -17,33 +17,30 @@ const PROCESS_COLORS = {
   L: '#dc2626',
 }
 
-/**
- * A single label rendered at exact mm dimensions.
- * widthMm and heightMm are the label physical dimensions.
- * scale: pixels per mm for screen preview (default 3.78 = 96dpi -> mm conversion)
- */
 export default function LabelPreview({
   code,
   supplier,
   processType,
   widthMm = 60,
   heightMm = 40,
-  scalePx = 3.78,  // 96 dpi / 25.4 mm per inch
-  forPrint = false  // when true, use pt units for PDF accuracy
+  scalePx = 3.78,
+  forPrint = false,
+  counter = null,  // countdown number for identical-mode labels
 }) {
   const barcodeRef = useRef(null)
 
-  const widthPx = Math.round(widthMm * scalePx)
+  const widthPx  = Math.round(widthMm  * scalePx)
   const heightPx = Math.round(heightMm * scalePx)
-  const accentColor = PROCESS_COLORS[processType] || '#16a34a'
+  const accentColor  = PROCESS_COLORS[processType] || '#16a34a'
   const processLabel = PROCESS_LABELS[processType] || processType
 
-  // Font sizes scaled proportionally to label
-  const supplierFontSize = Math.round(heightPx * 0.115)
-  const processLabelFontSize = Math.round(heightPx * 0.085)
-  const codeFontSize = Math.round(heightPx * 0.09)
-  const barHeight = Math.round(heightPx * 0.32)
-  const barcodeWidth = Math.max(1, Math.round(widthPx / 100))
+  const headerH          = Math.round(heightPx * 0.14)
+  const headerFontSize   = Math.round(headerH   * 0.52)
+  const supplierFontSize = Math.round(heightPx  * 0.115)
+  const codeFontSize     = Math.round(heightPx  * 0.085)
+  const counterFontSize  = Math.round(heightPx  * 0.14)
+  const barHeight        = Math.round(heightPx  * 0.33)
+  const barcodeWidth     = Math.max(1, Math.round(widthPx / 100))
 
   useEffect(() => {
     if (barcodeRef.current && code) {
@@ -75,20 +72,49 @@ export default function LabelPreview({
       }}
       className="label-item"
     >
-      {/* Top accent bar */}
+      {/* ── Header bar: process type ─────────────────────── */}
       <div
         style={{
-          height: `${Math.round(heightPx * 0.045)}px`,
+          height: `${headerH}px`,
           backgroundColor: accentColor,
+          display: 'flex',
+          alignItems: 'center',
+          padding: `0 ${Math.round(widthPx * 0.04)}px`,
+          gap: `${Math.round(headerH * 0.28)}px`,
           flexShrink: 0,
         }}
-      />
+      >
+        {/* small white dot */}
+        <div
+          style={{
+            width:  `${Math.round(headerH * 0.32)}px`,
+            height: `${Math.round(headerH * 0.32)}px`,
+            borderRadius: '50%',
+            backgroundColor: 'rgba(255,255,255,0.75)',
+            flexShrink: 0,
+          }}
+        />
+        <div
+          style={{
+            fontSize: `${headerFontSize}px`,
+            fontWeight: '700',
+            color: '#ffffff',
+            textTransform: 'uppercase',
+            letterSpacing: '0.07em',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {processLabel}
+        </div>
+      </div>
 
-      {/* Content */}
+      {/* ── Content ──────────────────────────────────────── */}
       <div
         style={{
           flex: 1,
-          padding: `${Math.round(heightPx * 0.05)}px ${Math.round(widthPx * 0.04)}px`,
+          padding: `${Math.round(heightPx * 0.045)}px ${Math.round(widthPx * 0.04)}px`,
           display: 'flex',
           flexDirection: 'column',
           gap: `${Math.round(heightPx * 0.02)}px`,
@@ -111,30 +137,6 @@ export default function LabelPreview({
           {supplier || 'Supplier Name'}
         </div>
 
-        {/* Process badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <div
-            style={{
-              width: `${Math.round(heightPx * 0.04)}px`,
-              height: `${Math.round(heightPx * 0.04)}px`,
-              borderRadius: '50%',
-              backgroundColor: accentColor,
-              flexShrink: 0,
-            }}
-          />
-          <div
-            style={{
-              fontSize: `${processLabelFontSize}px`,
-              fontWeight: '500',
-              color: accentColor,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            {processLabel}
-          </div>
-        </div>
-
         {/* Barcode */}
         <div
           style={{
@@ -152,27 +154,49 @@ export default function LabelPreview({
           />
         </div>
 
-        {/* Code text */}
+        {/* Code text + counter */}
         <div
           style={{
-            fontSize: `${codeFontSize}px`,
-            fontWeight: '600',
-            color: '#1f2937',
-            textAlign: 'center',
-            fontFamily: "'Consolas', 'Courier New', monospace",
-            letterSpacing: '0.08em',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             flexShrink: 0,
           }}
         >
-          {code}
+          <div
+            style={{
+              fontSize: `${codeFontSize}px`,
+              fontWeight: '600',
+              color: '#1f2937',
+              fontFamily: "'Consolas', 'Courier New', monospace",
+              letterSpacing: '0.06em',
+            }}
+          >
+            {code}
+          </div>
+
+          {counter !== null && counter !== undefined && (
+            <div
+              style={{
+                fontSize: `${counterFontSize}px`,
+                fontWeight: '800',
+                color: accentColor,
+                lineHeight: 1,
+                flexShrink: 0,
+                marginLeft: `${Math.round(widthPx * 0.02)}px`,
+              }}
+            >
+              {counter}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Bottom border */}
+      {/* ── Bottom accent strip ──────────────────────────── */}
       <div
         style={{
           height: `${Math.round(heightPx * 0.02)}px`,
-          backgroundColor: '#f3f4f6',
+          backgroundColor: accentColor + '50',
           flexShrink: 0,
         }}
       />

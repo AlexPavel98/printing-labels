@@ -113,10 +113,12 @@ export default function GeneratePage() {
         mode,
       })
 
-      const labels = result.codes.map(code => ({
+      const total = result.codes.length
+      const labels = result.codes.map((code, idx) => ({
         code,
         supplier: supplier.trim(),
         processType,
+        counter: mode === 'identical' ? total - idx : null,
       }))
 
       setGeneratedLabels(labels)
@@ -393,6 +395,7 @@ export default function GeneratePage() {
                   code={label.code}
                   supplier={label.supplier}
                   processType={label.processType}
+                  counter={label.counter}
                   widthMm={widthMm}
                   heightMm={heightMm}
                   scalePx={viewMode === 'list' ? 2.8 : 3.2}

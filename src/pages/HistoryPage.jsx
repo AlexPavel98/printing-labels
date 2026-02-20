@@ -76,10 +76,12 @@ export default function HistoryPage() {
     setExporting(batch.id)
     try {
       const batchData = await window.electronAPI.getBatch(batch.id)
-      const labels = batchData.codes.map(code => ({
+      const total = batchData.codes.length
+      const labels = batchData.codes.map((code, idx) => ({
         code,
         supplier: batch.supplier,
         processType: batch.process_type,
+        counter: batchData.mode === 'identical' ? total - idx : null,
       }))
       const html = buildPrintHTML(labels, {
         widthMm: Number(settings.label_width) || 60,
@@ -99,10 +101,12 @@ export default function HistoryPage() {
     setExporting(batch.id + '_pdf')
     try {
       const batchData = await window.electronAPI.getBatch(batch.id)
-      const labels = batchData.codes.map(code => ({
+      const total2 = batchData.codes.length
+      const labels = batchData.codes.map((code, idx) => ({
         code,
         supplier: batch.supplier,
         processType: batch.process_type,
+        counter: batchData.mode === 'identical' ? total2 - idx : null,
       }))
 
       const result = await window.electronAPI.savePdf(
