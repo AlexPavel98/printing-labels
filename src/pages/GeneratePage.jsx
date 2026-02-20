@@ -16,17 +16,18 @@ const PROCESS_TYPES = [
 
 function ProcessSelector({ value, onChange, sequences }) {
   return (
-    <div className="grid grid-cols-5 gap-2">
-      {PROCESS_TYPES.map(pt => {
-        const seq    = sequences.find(s => s.process_type === pt.value)
+    <div className="grid grid-cols-6 gap-2">
+      {PROCESS_TYPES.map((pt, i) => {
+        const seq     = sequences.find(s => s.process_type === pt.value)
         const nextNum = seq ? seq.last_number + 1 : 1
         const isActive = value === pt.value
+        const span = i < 3 ? 'col-span-2' : 'col-span-3'
         return (
           <button
             key={pt.value}
             onClick={() => onChange(pt.value)}
             className={`
-              p-3 rounded-lg border-2 text-left transition-all duration-150
+              ${span} p-2 rounded-lg border-2 text-left transition-all duration-150
               ${isActive
                 ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
                 : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-brand-300 dark:hover:border-brand-700'
@@ -36,7 +37,7 @@ function ProcessSelector({ value, onChange, sequences }) {
             <div className={`text-xs font-bold uppercase tracking-wide mb-0.5 ${isActive ? 'text-brand-700 dark:text-brand-400' : 'text-slate-500 dark:text-slate-400'}`}>
               {pt.value}
             </div>
-            <div className={`text-sm font-semibold leading-tight ${isActive ? 'text-brand-900 dark:text-brand-200' : 'text-slate-700 dark:text-slate-300'}`}>
+            <div className={`text-xs font-semibold leading-tight ${isActive ? 'text-brand-900 dark:text-brand-200' : 'text-slate-700 dark:text-slate-300'}`}>
               {pt.label}
             </div>
             <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
@@ -100,12 +101,15 @@ export default function GeneratePage() {
         mode,
       })
 
-      const total  = result.codes.length
+      const total   = result.codes.length
+      const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
       const labels = result.codes.map((code, idx) => ({
         code,
         supplier: supplier.trim(),
         processType,
         counter: mode === 'identical' ? total - idx : null,
+        total:   mode === 'identical' ? total : null,
+        date:    dateStr,
       }))
 
       setGeneratedLabels(labels)
@@ -340,6 +344,8 @@ export default function GeneratePage() {
                   supplier={label.supplier}
                   processType={label.processType}
                   counter={label.counter}
+                  total={label.total}
+                  date={label.date}
                   widthMm={widthMm}
                   heightMm={heightMm}
                   scalePx={viewMode === 'list' ? 1.8 : 2.0}

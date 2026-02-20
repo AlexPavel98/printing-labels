@@ -1,54 +1,59 @@
 import { useEffect, useRef } from 'react'
 import { renderBarcode } from '../utils/barcode'
 
-const PROCESS_LABELS = {
-  R:  'Reception',
-  S1: 'Sorting 1',
-  S2: 'Sorting 2',
-  P:  'Packing',
-  L:  'Lot / Batch',
-}
+const COMPANY_NAME    = 'Palm Karofler'
+const COMPANY_ADDRESS = 'Bøllemosegyden 58 | 5491 Blommenslyst'
 
 export default function LabelPreview({
   code,
   supplier,
-  processType,
+  processType,   // kept for future use / API compat
+  date     = '',
+  counter  = null,
+  total    = null,
   widthMm  = 100,
   heightMm = 75,
   scalePx  = 3.78,
   forPrint = false,
-  counter  = null,
 }) {
   const barcodeRef = useRef(null)
 
-  const widthPx  = Math.round(widthMm  * scalePx)
-  const heightPx = Math.round(heightMm * scalePx)
-  const processLabel = PROCESS_LABELS[processType] || processType
+  const isIdentical = counter !== null
 
-  const headerH          = Math.round(heightPx * 0.13)
-  const headerFontSize   = Math.round(headerH   * 0.50)
-  const supplierFontSize = Math.round(heightPx  * 0.10)
-  const codeFontSize     = Math.round(heightPx  * 0.08)
-  const counterFontSize  = Math.round(heightPx  * 0.13)
-  const barHeight        = Math.round(heightPx  * 0.35)
-  const barcodeWidth     = Math.max(1, Math.round(widthPx / 120))
+  const W = Math.round(widthMm  * scalePx)
+  const H = Math.round(heightMm * scalePx)
+
+  const pH = Math.round(W * 0.04)   // horizontal padding px
+  const pV = Math.round(H * 0.035)  // vertical padding px
+
+  // Font sizes (screen px)
+  const fCompany      = Math.round(H * 0.115)
+  const fAddress      = Math.round(H * 0.072)
+  const fSupplier     = Math.round(H * 0.088)
+  const fCode         = Math.round(H * 0.078)
+  const fDate         = Math.round(H * 0.065)
+  const fCounter      = Math.round(H * 0.230)
+  const fCounterSub   = Math.round(H * 0.095)
+
+  const barH = Math.round(H * 0.36)
+  const barW = Math.max(1, Math.round(W / 140))
 
   useEffect(() => {
     if (barcodeRef.current && code) {
       renderBarcode(barcodeRef.current, code, {
-        width:      barcodeWidth,
-        height:     barHeight,
+        width:      barW,
+        height:     barH,
         background: 'transparent',
         lineColor:  '#000000',
       })
     }
-  }, [code, barHeight, barcodeWidth])
+  }, [code, barH, barW])
 
   return (
     <div
       style={{
-        width:           `${widthPx}px`,
-        height:          `${heightPx}px`,
+        width:           `${W}px`,
+        height:          `${H}px`,
         backgroundColor: '#ffffff',
         border:          '1px solid #9ca3af',
         borderRadius:    '3px',
@@ -63,134 +68,107 @@ export default function LabelPreview({
       }}
       className="label-item"
     >
-      {/* ── Header: process type (light gray bg, black text) ── */}
+      {/* ── Header: company / address / supplier ── */}
       <div
         style={{
-          height:          `${headerH}px`,
-          backgroundColor: '#e5e7eb',
-          borderBottom:    '1px solid #9ca3af',
-          display:         'flex',
-          alignItems:      'center',
-          padding:         `0 ${Math.round(widthPx * 0.04)}px`,
-          gap:             `${Math.round(headerH * 0.30)}px`,
-          flexShrink:      0,
+          padding:      `${pV}px ${pH}px ${Math.round(pV * 0.6)}px`,
+          textAlign:    'center',
+          borderBottom: '1px solid #d1d5db',
+          flexShrink:   0,
         }}
       >
-        {/* small filled square */}
-        <div
-          style={{
-            width:           `${Math.round(headerH * 0.28)}px`,
-            height:          `${Math.round(headerH * 0.28)}px`,
-            backgroundColor: '#111827',
-            flexShrink:      0,
-          }}
-        />
-        <div
-          style={{
-            fontSize:       `${headerFontSize}px`,
-            fontWeight:     '700',
-            color:          '#111827',
-            textTransform:  'uppercase',
-            letterSpacing:  '0.07em',
-            overflow:       'hidden',
-            textOverflow:   'ellipsis',
-            whiteSpace:     'nowrap',
-          }}
-        >
-          {processLabel}
+        <div style={{ fontSize: `${fCompany}px`, fontWeight: '800', color: '#111827', lineHeight: 1.15 }}>
+          {COMPANY_NAME}
+        </div>
+        <div style={{ fontSize: `${fAddress}px`, fontWeight: '400', color: '#6b7280', lineHeight: 1.3, marginTop: `${Math.round(H * 0.010)}px` }}>
+          {COMPANY_ADDRESS}
+        </div>
+        <div style={{
+          fontSize:    `${fSupplier}px`,
+          fontWeight:  '600',
+          color:       '#374151',
+          lineHeight:  1.3,
+          marginTop:   `${Math.round(H * 0.014)}px`,
+          paddingTop:  `${Math.round(H * 0.014)}px`,
+          borderTop:   '1px solid #e5e7eb',
+        }}>
+          {supplier || '—'}
         </div>
       </div>
 
-      {/* ── Content ── */}
-      <div
-        style={{
-          flex:          1,
-          padding:       `${Math.round(heightPx * 0.04)}px ${Math.round(widthPx * 0.04)}px`,
-          display:       'flex',
-          flexDirection: 'column',
-          gap:           `${Math.round(heightPx * 0.02)}px`,
-          minHeight:     0,
-        }}
-      >
-        {/* Supplier name */}
-        <div
-          style={{
-            fontSize:      `${supplierFontSize}px`,
-            fontWeight:    '700',
-            color:         '#111827',
-            lineHeight:    '1.2',
-            overflow:      'hidden',
-            textOverflow:  'ellipsis',
-            whiteSpace:    'nowrap',
-            letterSpacing: '-0.01em',
-          }}
-        >
-          {supplier || 'Supplier Name'}
-        </div>
-
-        {/* Barcode */}
-        <div
-          style={{
-            flex:            1,
+      {isIdentical ? (
+        /* ── Identical: barcode left │ counter right ── */
+        <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+          <div style={{
+            flex:            '0 0 65%',
             display:         'flex',
             alignItems:      'center',
             justifyContent:  'center',
-            minHeight:       0,
-            overflow:        'hidden',
-          }}
-        >
-          <svg
-            ref={barcodeRef}
-            style={{ maxWidth: '100%', maxHeight: `${barHeight + 4}px` }}
-          />
-        </div>
-
-        {/* Code text + counter */}
-        <div
-          style={{
-            display:        'flex',
-            alignItems:     'center',
-            justifyContent: 'space-between',
-            flexShrink:     0,
-          }}
-        >
-          <div
-            style={{
-              fontSize:    `${codeFontSize}px`,
-              fontWeight:  '600',
-              color:       '#111827',
-              fontFamily:  "'Consolas', 'Courier New', monospace",
-              letterSpacing: '0.05em',
-            }}
-          >
-            {code}
+            padding:         `${Math.round(pV * 0.6)}px ${Math.round(pH * 0.5)}px`,
+            borderRight:     '1px solid #e5e7eb',
+          }}>
+            <svg ref={barcodeRef} style={{ maxWidth: '100%', maxHeight: `${barH}px` }} />
           </div>
-
-          {counter !== null && counter !== undefined && (
-            <div
-              style={{
-                fontSize:    `${counterFontSize}px`,
-                fontWeight:  '800',
-                color:       '#111827',
-                lineHeight:  1,
-                flexShrink:  0,
-                marginLeft:  `${Math.round(widthPx * 0.02)}px`,
-              }}
-            >
+          <div style={{
+            flex:           '0 0 35%',
+            display:        'flex',
+            flexDirection:  'column',
+            alignItems:     'center',
+            justifyContent: 'center',
+            gap:            `${Math.round(H * 0.01)}px`,
+          }}>
+            <div style={{ fontSize: `${fCounter}px`, fontWeight: '800', color: '#111827', lineHeight: 1 }}>
               {counter}
             </div>
-          )}
+            {total !== null && (
+              <div style={{ fontSize: `${fCounterSub}px`, fontWeight: '400', color: '#6b7280', lineHeight: 1 }}>
+                / {total}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        /* ── Consecutive: barcode centered, 80% wide ── */
+        <div style={{
+          flex:           1,
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'center',
+          padding:        `${Math.round(pV * 0.5)}px ${pH}px`,
+          minHeight:      0,
+        }}>
+          <svg ref={barcodeRef} style={{ maxWidth: '80%', maxHeight: `${barH}px` }} />
+        </div>
+      )}
 
-      {/* ── Bottom strip ── */}
+      {/* ── Footer: date left | code center ── */}
       <div
         style={{
-          height:          `${Math.round(heightPx * 0.015)}px`,
-          backgroundColor: '#e5e7eb',
-          flexShrink:      0,
+          borderTop:  '1px solid #d1d5db',
+          padding:    `${Math.round(pV * 0.5)}px ${pH}px`,
+          display:    'flex',
+          alignItems: 'center',
+          position:   'relative',
+          flexShrink: 0,
         }}
-      />
+      >
+        <div style={{ fontSize: `${fDate}px`, color: '#9ca3af', fontWeight: '400', flexShrink: 0 }}>
+          {date}
+        </div>
+        <div style={{
+          position:    'absolute',
+          left:        '50%',
+          transform:   'translateX(-50%)',
+          fontSize:    `${fCode}px`,
+          fontWeight:  '700',
+          color:       '#111827',
+          fontFamily:  "'Consolas', 'Courier New', monospace",
+          letterSpacing: '0.05em',
+          whiteSpace:  'nowrap',
+        }}>
+          {code}
+        </div>
+      </div>
     </div>
   )
 }

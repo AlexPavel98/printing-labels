@@ -76,12 +76,17 @@ export default function HistoryPage() {
     setExporting(batch.id)
     try {
       const batchData = await window.electronAPI.getBatch(batch.id)
-      const total = batchData.codes.length
+      const total   = batchData.codes.length
+      const dateStr = batch.created_at
+        ? new Date(batch.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        : ''
       const labels = batchData.codes.map((code, idx) => ({
         code,
         supplier: batch.supplier,
         processType: batch.process_type,
         counter: batchData.mode === 'identical' ? total - idx : null,
+        total:   batchData.mode === 'identical' ? total : null,
+        date:    dateStr,
       }))
       const html = buildPrintHTML(labels, {
         widthMm:  Number(settings.label_width)  || 100,
