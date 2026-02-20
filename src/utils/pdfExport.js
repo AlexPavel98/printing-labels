@@ -38,9 +38,9 @@ export function buildPrintHTML(labels, options = {}) {
     } catch { /* ignore invalid codes */ }
     const svgStr = svgEl.outerHTML
 
-    const headerH   = heightMm * 0.13
-    const headerPt  = (headerH * 0.50 * 2.835).toFixed(1)
-    const sqSizeMm  = (headerH * 0.28).toFixed(2)
+    const headerH   = heightMm * 0.13               // mm
+    const headerPt  = (headerH * 0.55 / 0.353).toFixed(1)  // 55% of header height in pt
+    const sqSizeMm  = (headerH * 0.30).toFixed(2)
 
     return `<div class="label${isLast ? ' last' : ''}">
   <!-- Header: process type -->
@@ -132,13 +132,14 @@ export function buildPrintHTML(labels, options = {}) {
   }
 
   .supplier {
-    font-size: ${(heightMm * 0.80).toFixed(1)}pt;
+    font-size: ${(heightMm * 0.38).toFixed(1)}pt;
     font-weight: 800;
     color: #111827;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.2;
+    flex-shrink: 0;
   }
 
   .barcode {
@@ -157,14 +158,14 @@ export function buildPrintHTML(labels, options = {}) {
     flex-shrink: 0;
   }
   .code {
-    font-size: ${(heightMm * 0.62).toFixed(1)}pt;
+    font-size: ${(heightMm * 0.25).toFixed(1)}pt;
     font-weight: 700;
     font-family: 'Courier New', monospace;
     letter-spacing: 0.05em;
     color: #111827;
   }
   .counter {
-    font-size: ${(heightMm * 0.88).toFixed(1)}pt;
+    font-size: ${(heightMm * 0.40).toFixed(1)}pt;
     font-weight: 800;
     color: #111827;
     line-height: 1;
