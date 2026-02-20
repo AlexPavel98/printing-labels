@@ -1,7 +1,11 @@
 import JsBarcode from 'jsbarcode'
 
-const COMPANY_NAME    = 'Palm Karofler'
+const COMPANY_NAME    = 'Palm Kartofler'
 const COMPANY_ADDRESS = 'Bøllemosegyden 58 | 5491 Blommenslyst'
+
+const PROCESS_LABELS = {
+  R: 'Reception', S1: 'Sorting 1', S2: 'Sorting 2', P: 'Packing', L: 'Lot / Batch',
+}
 
 /**
  * Build an HTML document for direct printing to the label printer.
@@ -14,7 +18,8 @@ const COMPANY_ADDRESS = 'Bøllemosegyden 58 | 5491 Blommenslyst'
 export function buildPrintHTML(labels, options = {}) {
   const { widthMm = 100, heightMm = 75 } = options
 
-  const labelHTMLs = labels.map(({ code, supplier, counter, total, date }, idx) => {
+  const labelHTMLs = labels.map((label, idx) => {
+    const { code, supplier, processType, counter, total, date } = label
     const isLast      = idx === labels.length - 1
     const isIdentical = counter !== null && counter !== undefined
 
@@ -52,6 +57,8 @@ export function buildPrintHTML(labels, options = {}) {
           ${svgStr.replace('<svg', `<svg style="max-width:80%;max-height:${maxBarcodeH};"`)}
         </div>`
 
+    const procLabel = PROCESS_LABELS[label.processType] || label.processType || ''
+
     return `<div class="label${isLast ? ' last' : ''}">
   <div class="header">
     <div class="company-name">${COMPANY_NAME}</div>
@@ -60,8 +67,11 @@ export function buildPrintHTML(labels, options = {}) {
   </div>
   ${bodyHTML}
   <div class="footer">
-    <span class="date">${date || ''}</span>
-    <span class="code-text">${code}</span>
+    <div class="date">${date || ''}</div>
+    <div class="footer-code-row">
+      <span class="proc-label">${procLabel}</span>
+      <span class="code-text">${code}</span>
+    </div>
   </div>
 </div>`
   }).join('\n')
@@ -185,28 +195,37 @@ export function buildPrintHTML(labels, options = {}) {
   /* ── Footer ── */
   .footer {
     border-top: 0.3pt solid #d1d5db;
-    padding: ${(heightMm * 0.025).toFixed(2)}mm ${(widthMm * 0.04).toFixed(2)}mm;
+    padding: ${(heightMm * 0.022).toFixed(2)}mm ${(widthMm * 0.04).toFixed(2)}mm;
     display: flex;
-    align-items: center;
-    position: relative;
+    flex-direction: column;
+    gap: ${(heightMm * 0.006).toFixed(2)}mm;
     flex-shrink: 0;
   }
   .date {
     font-size: ${(heightMm * 0.065 / 0.353).toFixed(1)}pt;
     font-weight: 400;
     color: #9ca3af;
-    flex-shrink: 0;
+    line-height: 1;
+  }
+  .footer-code-row {
+    display: flex;
+    align-items: baseline;
+    gap: ${(widthMm * 0.025).toFixed(2)}mm;
+  }
+  .proc-label {
+    font-size: ${(heightMm * 0.065 / 0.353).toFixed(1)}pt;
+    font-weight: 600;
+    color: #6b7280;
+    line-height: 1;
   }
   .code-text {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
     font-size: ${(heightMm * 0.078 / 0.353).toFixed(1)}pt;
     font-weight: 700;
     color: #111827;
     font-family: 'Courier New', 'Consolas', monospace;
     letter-spacing: 0.05em;
     white-space: nowrap;
+    line-height: 1;
   }
 </style>
 </head>

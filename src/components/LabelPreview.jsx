@@ -1,8 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { renderBarcode } from '../utils/barcode'
 
-const COMPANY_NAME    = 'Palm Karofler'
+const COMPANY_NAME    = 'Palm Kartofler'
 const COMPANY_ADDRESS = 'Bøllemosegyden 58 | 5491 Blommenslyst'
+
+const PROCESS_LABELS = {
+  R: 'Reception', S1: 'Sorting 1', S2: 'Sorting 2', P: 'Packing', L: 'Lot / Batch',
+}
 
 export default function LabelPreview({
   code,
@@ -141,32 +145,36 @@ export default function LabelPreview({
         </div>
       )}
 
-      {/* ── Footer: date left | code center ── */}
+      {/* ── Footer: date row / process-type + code row ── */}
       <div
         style={{
-          borderTop:  '1px solid #d1d5db',
-          padding:    `${Math.round(pV * 0.5)}px ${pH}px`,
-          display:    'flex',
-          alignItems: 'center',
-          position:   'relative',
-          flexShrink: 0,
+          borderTop:     '1px solid #d1d5db',
+          padding:       `${Math.round(pV * 0.4)}px ${pH}px`,
+          display:       'flex',
+          flexDirection: 'column',
+          gap:           `${Math.round(H * 0.006)}px`,
+          flexShrink:    0,
         }}
       >
-        <div style={{ fontSize: `${fDate}px`, color: '#9ca3af', fontWeight: '400', flexShrink: 0 }}>
+        {/* row 1: date */}
+        <div style={{ fontSize: `${fDate}px`, color: '#9ca3af', fontWeight: '400', lineHeight: 1 }}>
           {date}
         </div>
-        <div style={{
-          position:    'absolute',
-          left:        '50%',
-          transform:   'translateX(-50%)',
-          fontSize:    `${fCode}px`,
-          fontWeight:  '700',
-          color:       '#111827',
-          fontFamily:  "'Consolas', 'Courier New', monospace",
-          letterSpacing: '0.05em',
-          whiteSpace:  'nowrap',
-        }}>
-          {code}
+        {/* row 2: process type · code */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: `${Math.round(pH * 0.5)}px` }}>
+          <span style={{ fontSize: `${fDate}px`, fontWeight: '600', color: '#6b7280', lineHeight: 1 }}>
+            {PROCESS_LABELS[processType] || processType}
+          </span>
+          <span style={{
+            fontSize:      `${fCode}px`,
+            fontWeight:    '700',
+            color:         '#111827',
+            fontFamily:    "'Consolas', 'Courier New', monospace",
+            letterSpacing: '0.05em',
+            lineHeight:    1,
+          }}>
+            {code}
+          </span>
         </div>
       </div>
     </div>
