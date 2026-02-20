@@ -4,46 +4,69 @@ const fs = require('fs')
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
-// ─── Database (inlined) ──────────────────────────────────────────────────────
-
-const Database = require('better-sqlite3')
+// ─── Database (sql.js — pure WebAssembly, no compilation needed) ──────────────
 
 let _db = null
+let _dbPath = null
+
+async function initDb() {
+  const initSqlJs = require('sql.js')
+  const SQL = await initSqlJs({
+    locateFile: file => {
+      if (app.isPackaged) {
+        return path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'sql.js', 'dist', file)
+      }
+      return path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', file)
+    },
+  })
+
+  _dbPath = path.join(app.getPath('userData'), 'palm-karofler.db')
+  _db = fs.existsSync(_dbPath)
+    ? new SQL.Database(fs.readFileSync(_dbPath))
+    : new SQL.Database()
+
+  _db.run('PRAGMA foreign_keys = ON')
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS sequences (
+      process_type TEXT PRIMARY KEY,
+      last_number  INTEGER NOT NULL DEFAULT 0,
+      updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS batches (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      supplier     TEXT NOT NULL,
+      process_type TEXT NOT NULL,
+      start_code   TEXT NOT NULL,
+      end_code     TEXT NOT NULL,
+      quantity     INTEGER NOT NULL,
+      mode         TEXT NOT NULL CHECK(mode IN ('consecutive','identical')),
+      start_number INTEGER NOT NULL,
+      end_number   INTEGER NOT NULL,
+      created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `)
+
+  for (const type of ['R', 'S1', 'S2', 'P', 'L']) {
+    _db.run('INSERT OR IGNORE INTO sequences (process_type, last_number) VALUES (?, ?)', [type, 0])
+  }
+  _db.run("INSERT OR IGNORE INTO settings (key, value) VALUES ('label_width', '60')")
+  _db.run("INSERT OR IGNORE INTO settings (key, value) VALUES ('label_height', '40')")
+
+  saveDb()
+}
+
+function saveDb() {
+  if (_db && _dbPath) {
+    fs.writeFileSync(_dbPath, Buffer.from(_db.export()))
+  }
+}
 
 function getDb() {
-  if (!_db) {
-    const dbPath = path.join(app.getPath('userData'), 'palm-karofler.db')
-    _db = new Database(dbPath)
-    _db.pragma('journal_mode = WAL')
-    _db.pragma('foreign_keys = ON')
-    _db.exec(`
-      CREATE TABLE IF NOT EXISTS sequences (
-        process_type TEXT PRIMARY KEY,
-        last_number  INTEGER NOT NULL DEFAULT 0,
-        updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
-      );
-      CREATE TABLE IF NOT EXISTS batches (
-        id           INTEGER PRIMARY KEY AUTOINCREMENT,
-        supplier     TEXT NOT NULL,
-        process_type TEXT NOT NULL,
-        start_code   TEXT NOT NULL,
-        end_code     TEXT NOT NULL,
-        quantity     INTEGER NOT NULL,
-        mode         TEXT NOT NULL CHECK(mode IN ('consecutive','identical')),
-        start_number INTEGER NOT NULL,
-        end_number   INTEGER NOT NULL,
-        created_at   TEXT NOT NULL DEFAULT (datetime('now'))
-      );
-      CREATE TABLE IF NOT EXISTS settings (
-        key   TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      );
-      INSERT OR IGNORE INTO sequences (process_type, last_number) VALUES
-        ('R',0),('S1',0),('S2',0),('P',0),('L',0);
-      INSERT OR IGNORE INTO settings (key, value) VALUES
-        ('label_width','60'),('label_height','40');
-    `)
-  }
+  if (!_db) throw new Error('Database not initialised')
   return _db
 }
 
@@ -51,14 +74,32 @@ function makeCode(type, n) {
   return `PALM-${type}-${String(n).padStart(6, '0')}`
 }
 
+function queryAll(sql, params = []) {
+  const stmt = getDb().prepare(sql)
+  if (params.length) stmt.bind(params)
+  const rows = []
+  while (stmt.step()) rows.push(stmt.getAsObject())
+  stmt.free()
+  return rows
+}
+
+function queryOne(sql, params = []) {
+  const stmt = getDb().prepare(sql)
+  if (params.length) stmt.bind(params)
+  const row = stmt.step() ? stmt.getAsObject() : null
+  stmt.free()
+  return row
+}
+
 function dbGetSequences() {
-  return getDb().prepare('SELECT * FROM sequences ORDER BY process_type').all()
+  return queryAll('SELECT * FROM sequences ORDER BY process_type')
 }
 
 function dbGenerateLabels({ processType, supplier, quantity, mode }) {
   const db = getDb()
-  return db.transaction(() => {
-    const seq = db.prepare('SELECT last_number FROM sequences WHERE process_type = ?').get(processType)
+  db.run('BEGIN TRANSACTION')
+  try {
+    const seq = queryOne('SELECT last_number FROM sequences WHERE process_type = ?', [processType])
     if (!seq) throw new Error(`Unknown process type: ${processType}`)
 
     const startNumber = seq.last_number + 1
@@ -73,30 +114,37 @@ function dbGenerateLabels({ processType, supplier, quantity, mode }) {
       codes = Array(quantity).fill(makeCode(processType, startNumber))
     }
 
-    db.prepare(`UPDATE sequences SET last_number=?, updated_at=datetime('now') WHERE process_type=?`)
-      .run(endNumber, processType)
-
     const startCode = makeCode(processType, startNumber)
     const endCode   = makeCode(processType, endNumber)
-    const r = db.prepare(`
-      INSERT INTO batches (supplier,process_type,start_code,end_code,quantity,mode,start_number,end_number)
-      VALUES (?,?,?,?,?,?,?,?)
-    `).run(supplier, processType, startCode, endCode, quantity, mode, startNumber, endNumber)
 
-    return { batchId: r.lastInsertRowid, codes, startCode, endCode, startNumber, endNumber }
-  })()
+    db.run(
+      `UPDATE sequences SET last_number=?, updated_at=datetime('now') WHERE process_type=?`,
+      [endNumber, processType]
+    )
+    db.run(
+      `INSERT INTO batches (supplier,process_type,start_code,end_code,quantity,mode,start_number,end_number) VALUES (?,?,?,?,?,?,?,?)`,
+      [supplier, processType, startCode, endCode, quantity, mode, startNumber, endNumber]
+    )
+
+    const batchId = queryOne('SELECT last_insert_rowid() as id').id
+    db.run('COMMIT')
+    saveDb()
+
+    return { batchId, codes, startCode, endCode, startNumber, endNumber }
+  } catch (err) {
+    try { db.run('ROLLBACK') } catch (_) {}
+    throw err
+  }
 }
 
 function dbGetHistory({ page = 1, limit = 50 } = {}) {
-  const db = getDb()
-  const rows  = db.prepare('SELECT * FROM batches ORDER BY created_at DESC LIMIT ? OFFSET ?').all(limit, (page-1)*limit)
-  const total = db.prepare('SELECT COUNT(*) as count FROM batches').get().count
+  const rows  = queryAll('SELECT * FROM batches ORDER BY created_at DESC LIMIT ? OFFSET ?', [limit, (page - 1) * limit])
+  const total = (queryOne('SELECT COUNT(*) as count FROM batches') || { count: 0 }).count
   return { rows, total, page, limit }
 }
 
 function dbGetBatch(batchId) {
-  const db = getDb()
-  const batch = db.prepare('SELECT * FROM batches WHERE id=?').get(batchId)
+  const batch = queryOne('SELECT * FROM batches WHERE id=?', [batchId])
   if (!batch) throw new Error('Batch not found')
   const codes = batch.mode === 'consecutive'
     ? Array.from({ length: batch.end_number - batch.start_number + 1 }, (_, i) => makeCode(batch.process_type, batch.start_number + i))
@@ -105,43 +153,51 @@ function dbGetBatch(batchId) {
 }
 
 function dbGetSettings() {
-  const rows = getDb().prepare('SELECT * FROM settings').all()
-  return Object.fromEntries(rows.map(r => [r.key, r.value]))
+  return Object.fromEntries(queryAll('SELECT * FROM settings').map(r => [r.key, r.value]))
 }
 
 function dbSaveSettings(settings) {
   const db = getDb()
-  const upsert = db.prepare(`INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`)
-  db.transaction(s => { for (const [k,v] of Object.entries(s)) upsert.run(k, String(v)) })(settings)
+  for (const [k, v] of Object.entries(settings)) {
+    db.run(
+      `INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`,
+      [k, String(v)]
+    )
+  }
+  saveDb()
   return { success: true }
 }
 
 function dbResetSequence(processType) {
-  getDb().prepare(`UPDATE sequences SET last_number=0, updated_at=datetime('now') WHERE process_type=?`).run(processType)
+  getDb().run(`UPDATE sequences SET last_number=0, updated_at=datetime('now') WHERE process_type=?`, [processType])
+  saveDb()
   return { success: true }
 }
 
 function dbResetAllSequences() {
-  getDb().prepare(`UPDATE sequences SET last_number=0, updated_at=datetime('now')`).run()
+  getDb().run(`UPDATE sequences SET last_number=0, updated_at=datetime('now')`)
+  saveDb()
   return { success: true }
 }
 
 function dbBackup(destPath) {
-  getDb().backup(destPath)
+  fs.writeFileSync(destPath, Buffer.from(getDb().export()))
   return { success: true, path: destPath }
 }
 
 function dbDeleteBatch(id) {
-  getDb().prepare('DELETE FROM batches WHERE id=?').run(id)
+  getDb().run('DELETE FROM batches WHERE id=?', [id])
+  saveDb()
   return { success: true }
 }
 
 function dbClearHistory() {
-  getDb().prepare('DELETE FROM batches').run()
+  getDb().run('DELETE FROM batches')
+  saveDb()
   return { success: true }
 }
 
-// ─── Window ──────────────────────────────────────────────────────────────────
+// ─── Window ───────────────────────────────────────────────────────────────────
 
 let mainWindow = null
 
@@ -163,8 +219,7 @@ function createWindow() {
   })
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173')
-    mainWindow.webContents.openDevTools()
+    loadDevUrl()
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
@@ -173,7 +228,14 @@ function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null })
 }
 
-app.whenReady().then(() => {
+function loadDevUrl() {
+  mainWindow.loadURL('http://localhost:5173').catch(() => {
+    setTimeout(loadDevUrl, 1000)
+  })
+}
+
+app.whenReady().then(async () => {
+  await initDb()
   createWindow()
   app.on('activate', () => { if (!BrowserWindow.getAllWindows().length) createWindow() })
 })
@@ -182,16 +244,16 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
 
 // ─── IPC ─────────────────────────────────────────────────────────────────────
 
-ipcMain.handle('db:get-sequences',      () => dbGetSequences())
-ipcMain.handle('db:generate-labels',    (_, p) => dbGenerateLabels(p))
-ipcMain.handle('db:get-history',        (_, p) => dbGetHistory(p))
-ipcMain.handle('db:get-batch',          (_, id) => dbGetBatch(id))
-ipcMain.handle('db:get-settings',       () => dbGetSettings())
-ipcMain.handle('db:save-settings',      (_, s) => dbSaveSettings(s))
-ipcMain.handle('db:reset-sequence',     (_, t) => dbResetSequence(t))
-ipcMain.handle('db:reset-all-sequences',() => dbResetAllSequences())
-ipcMain.handle('db:delete-batch',       (_, id) => dbDeleteBatch(id))
-ipcMain.handle('db:clear-history',      () => dbClearHistory())
+ipcMain.handle('db:get-sequences',       () => dbGetSequences())
+ipcMain.handle('db:generate-labels',     (_, p) => dbGenerateLabels(p))
+ipcMain.handle('db:get-history',         (_, p) => dbGetHistory(p))
+ipcMain.handle('db:get-batch',           (_, id) => dbGetBatch(id))
+ipcMain.handle('db:get-settings',        () => dbGetSettings())
+ipcMain.handle('db:save-settings',       (_, s) => dbSaveSettings(s))
+ipcMain.handle('db:reset-sequence',      (_, t) => dbResetSequence(t))
+ipcMain.handle('db:reset-all-sequences', () => dbResetAllSequences())
+ipcMain.handle('db:delete-batch',        (_, id) => dbDeleteBatch(id))
+ipcMain.handle('db:clear-history',       () => dbClearHistory())
 
 ipcMain.handle('dialog:save-backup', async () => {
   const r = await dialog.showSaveDialog(mainWindow, {
