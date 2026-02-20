@@ -13,16 +13,16 @@ const PROCESS_TYPES = [
 ]
 
 const LABEL_PRESETS = [
-  { label: '50 × 30 mm', width: 50, height: 30 },
-  { label: '60 × 40 mm', width: 60, height: 40 },
+  { label: '100 × 75 mm', width: 100, height: 75 },
   { label: '100 × 50 mm', width: 100, height: 50 },
-  { label: '70 × 40 mm', width: 70, height: 40 },
+  { label: '70 × 40 mm',  width: 70,  height: 40 },
+  { label: '60 × 40 mm',  width: 60,  height: 40 },
 ]
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
-    label_width: '60',
-    label_height: '40',
+    label_width:  '100',
+    label_height: '75',
   })
   const [sequences, setSequences] = useState([])
   const [version, setVersion] = useState('')
@@ -230,10 +230,10 @@ export default function SettingsPage() {
               >
                 <div>
                   <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
-                    PALM-{seq.process_type}-######
+                    PALM-{seq.process_type}-#
                   </span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
-                    Last: #{String(seq.last_number).padStart(6, '0')} · Next: #{String(seq.last_number + 1).padStart(6, '0')}
+                    Last: #{seq.last_number} · Next: #{seq.last_number + 1}
                   </span>
                 </div>
                 <button
@@ -330,7 +330,7 @@ export default function SettingsPage() {
               </h3>
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-              This will reset the counter to 0. New codes will start from 000001. This cannot be undone.
+              This will reset the counter to 0. New codes will start from 1. This cannot be undone.
               Enter admin PIN to confirm.
             </p>
             <div className="mb-4">

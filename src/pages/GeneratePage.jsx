@@ -44,7 +44,7 @@ function ProcessSelector({ value, onChange, sequences }) {
               {pt.label}
             </div>
             <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              Next: #{String(nextNum).padStart(6, '0')}
+              Next: #{nextNum}
             </div>
           </button>
         )
@@ -55,7 +55,7 @@ function ProcessSelector({ value, onChange, sequences }) {
 
 export default function GeneratePage() {
   const [sequences, setSequences] = useState([])
-  const [settings, setSettings] = useState({ label_width: '60', label_height: '40' })
+  const [settings, setSettings] = useState({ label_width: '100', label_height: '75' })
 
   // Form state
   const [processType, setProcessType] = useState('R')
@@ -141,9 +141,9 @@ export default function GeneratePage() {
       )
       if (!result.canceled && result.filePath) {
         const pdfBytes = exportLabelsToPDF(generatedLabels, {
-          widthMm: Number(settings.label_width) || 60,
-          heightMm: Number(settings.label_height) || 40,
-          cols: 3,
+          widthMm:  Number(settings.label_width)  || 100,
+          heightMm: Number(settings.label_height) || 75,
+          cols: 2,
         })
         await window.electronAPI.writeFile({
           filePath: result.filePath,
@@ -163,9 +163,8 @@ export default function GeneratePage() {
     if (!generatedLabels.length) return
     try {
       const html = buildPrintHTML(generatedLabels, {
-        widthMm: Number(settings.label_width) || 60,
-        heightMm: Number(settings.label_height) || 40,
-        cols: 3,
+        widthMm:  Number(settings.label_width)  || 100,
+        heightMm: Number(settings.label_height) || 75,
       })
       await window.electronAPI.printLabels({ html })
     } catch (err) {
@@ -268,12 +267,12 @@ export default function GeneratePage() {
               <label className="label">Preview</label>
               <div className="flex justify-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
                 <LabelPreview
-                  code={`PALM-${processType}-000001`}
+                  code={`PALM-${processType}-1`}
                   supplier={supplier}
                   processType={processType}
                   widthMm={widthMm}
                   heightMm={heightMm}
-                  scalePx={2.4}
+                  scalePx={1.6}
                 />
               </div>
             </div>

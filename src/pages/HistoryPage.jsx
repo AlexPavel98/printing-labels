@@ -33,7 +33,7 @@ export default function HistoryPage() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
-  const [settings, setSettings] = useState({ label_width: '60', label_height: '40' })
+  const [settings, setSettings] = useState({ label_width: '100', label_height: '75' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
@@ -84,9 +84,8 @@ export default function HistoryPage() {
         counter: batchData.mode === 'identical' ? total - idx : null,
       }))
       const html = buildPrintHTML(labels, {
-        widthMm: Number(settings.label_width) || 60,
-        heightMm: Number(settings.label_height) || 40,
-        cols: 3,
+        widthMm:  Number(settings.label_width)  || 100,
+        heightMm: Number(settings.label_height) || 75,
       })
       await window.electronAPI.printLabels({ html })
       setSuccess(`Reprinted batch #${batch.id}`)
@@ -114,9 +113,9 @@ export default function HistoryPage() {
       )
       if (!result.canceled && result.filePath) {
         const pdfBytes = exportLabelsToPDF(labels, {
-          widthMm: Number(settings.label_width) || 60,
-          heightMm: Number(settings.label_height) || 40,
-          cols: 3,
+          widthMm:  Number(settings.label_width)  || 100,
+          heightMm: Number(settings.label_height) || 75,
+          cols: 2,
         })
         await window.electronAPI.writeFile({
           filePath: result.filePath,

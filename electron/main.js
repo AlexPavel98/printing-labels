@@ -53,8 +53,8 @@ async function initDb() {
   for (const type of ['R', 'S1', 'S2', 'P', 'L']) {
     _db.run('INSERT OR IGNORE INTO sequences (process_type, last_number) VALUES (?, ?)', [type, 0])
   }
-  _db.run("INSERT OR IGNORE INTO settings (key, value) VALUES ('label_width', '60')")
-  _db.run("INSERT OR IGNORE INTO settings (key, value) VALUES ('label_height', '40')")
+  _db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('label_width', '100')")
+  _db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('label_height', '75')")
 
   saveDb()
 }
@@ -71,7 +71,7 @@ function getDb() {
 }
 
 function makeCode(type, n) {
-  return `PALM-${type}-${String(n).padStart(6, '0')}`
+  return `PALM-${type}-${n}`
 }
 
 function queryAll(sql, params = []) {
