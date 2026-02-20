@@ -186,7 +186,23 @@ function dbBackup(destPath) {
 }
 
 function dbDeleteBatch(id) {
-  getDb().run('DELETE FROM batches WHERE id=?', [id])
+  const db = getDb()
+  const batch = queryOne('SELECT process_type FROM batches WHERE id=?', [id])
+  if (!batch) return { success: false, error: 'Batch not found' }
+
+  db.run('DELETE FROM batches WHERE id=?', [id])
+
+  // Recalculate counter from remaining batches for this process type
+  const remaining = queryOne(
+    'SELECT MAX(end_number) as max_end FROM batches WHERE process_type=?',
+    [batch.process_type]
+  )
+  const newLast = (remaining && remaining.max_end !== null) ? remaining.max_end : 0
+  db.run(
+    `UPDATE sequences SET last_number=?, updated_at=datetime('now') WHERE process_type=?`,
+    [newLast, batch.process_type]
+  )
+
   saveDb()
   return { success: true }
 }
