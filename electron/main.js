@@ -50,8 +50,8 @@ async function initDb() {
     );
   `)
 
-  // Initialise sequences from NiceLabel last-used values.
-  // ON CONFLICT: keep whichever value is higher (safe to run on existing DB).
+  // Initialise sequences only if they don't exist yet.
+  // Never overwrite existing counters so printed labels are never lost.
   const nlabelStart = [
     ['R',  9000601],  // Purchase.dvv
     ['S1', 9100803],  // 1 Sorting.dvv
@@ -61,8 +61,7 @@ async function initDb() {
   ]
   for (const [type, lastVal] of nlabelStart) {
     _db.run(
-      `INSERT INTO sequences (process_type, last_number) VALUES (?, ?)
-       ON CONFLICT(process_type) DO UPDATE SET last_number = MAX(last_number, excluded.last_number)`,
+      'INSERT OR IGNORE INTO sequences (process_type, last_number) VALUES (?, ?)',
       [type, lastVal]
     )
   }
