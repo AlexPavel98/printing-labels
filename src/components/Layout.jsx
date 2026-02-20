@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Tag, History, Settings, Sun, Moon, Leaf } from 'lucide-react'
+import { Tag, History, Settings, Sun, Moon } from 'lucide-react'
 
 const navItems = [
   { to: '/generate', icon: Tag, label: 'Generate Labels' },
@@ -13,19 +13,15 @@ export default function Layout({ children, darkMode, setDarkMode }) {
       {/* Sidebar */}
       <aside className="w-60 flex-shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
         {/* Logo */}
-        <div className="p-5 border-b border-slate-200 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-brand-600 flex items-center justify-center flex-shrink-0">
-              <Leaf className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-tight">
-                Palm Karofler
-              </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
-                Label Generator
-              </div>
-            </div>
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700">
+          <img
+            src="/palm-logo.jpg"
+            alt="Palm Kartofler"
+            className="w-full object-contain"
+            style={{ maxHeight: '56px' }}
+          />
+          <div className="text-xs text-slate-400 dark:text-slate-500 text-center mt-1">
+            Label Generator
           </div>
         </div>
 
