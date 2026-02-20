@@ -239,7 +239,9 @@ export default function GeneratePage() {
               <label className="label">Preview</label>
               <div className="flex justify-center p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
                 <LabelPreview
-                  code={`PALM-${processType}-1`}
+                  code={sequences.find(s => s.process_type === processType)
+                    ? String(sequences.find(s => s.process_type === processType).last_number + 1).padStart(7, '0')
+                    : '9000001'}
                   supplier={supplier}
                   processType={processType}
                   widthMm={widthMm}

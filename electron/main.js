@@ -50,8 +50,21 @@ async function initDb() {
     );
   `)
 
-  for (const type of ['R', 'S1', 'S2', 'P', 'L']) {
-    _db.run('INSERT OR IGNORE INTO sequences (process_type, last_number) VALUES (?, ?)', [type, 0])
+  // Initialise sequences from NiceLabel last-used values.
+  // ON CONFLICT: keep whichever value is higher (safe to run on existing DB).
+  const nlabelStart = [
+    ['R',  9000601],  // Purchase.dvv
+    ['S1', 9100803],  // 1 Sorting.dvv
+    ['S2', 9202321],  // 2 nd sorting.dvv
+    ['P',  9303401],  // Packing.dvv
+    ['L',  9400000],  // Lot/Batch – new range
+  ]
+  for (const [type, lastVal] of nlabelStart) {
+    _db.run(
+      `INSERT INTO sequences (process_type, last_number) VALUES (?, ?)
+       ON CONFLICT(process_type) DO UPDATE SET last_number = MAX(last_number, excluded.last_number)`,
+      [type, lastVal]
+    )
   }
   _db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('label_width', '100')")
   _db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('label_height', '75')")
@@ -70,8 +83,8 @@ function getDb() {
   return _db
 }
 
-function makeCode(type, n) {
-  return `PALM-${type}-${n}`
+function makeCode(_type, n) {
+  return String(n).padStart(7, '0')
 }
 
 function queryAll(sql, params = []) {
