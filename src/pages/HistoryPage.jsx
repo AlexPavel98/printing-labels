@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  History, Search, Printer, FileDown, Trash2,
+  History, Search, Printer, Trash2,
   ChevronLeft, ChevronRight, RefreshCw, AlertCircle,
-  CheckCircle2, Calendar, Package, Hash
+  CheckCircle2
 } from 'lucide-react'
-import { exportLabelsToPDF, buildPrintHTML } from '../utils/pdfExport'
+import { buildPrintHTML } from '../utils/pdfExport'
 
 const PROCESS_LABELS = {
   R: 'Reception', S1: 'Sorting 1', S2: 'Sorting 2', P: 'Packing', L: 'Lot / Batch',
@@ -89,41 +89,6 @@ export default function HistoryPage() {
       })
       await window.electronAPI.printLabels({ html })
       setSuccess(`Reprinted batch #${batch.id}`)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setExporting(null)
-    }
-  }
-
-  const handleExportBatch = async (batch) => {
-    setExporting(batch.id + '_pdf')
-    try {
-      const batchData = await window.electronAPI.getBatch(batch.id)
-      const total2 = batchData.codes.length
-      const labels = batchData.codes.map((code, idx) => ({
-        code,
-        supplier: batch.supplier,
-        processType: batch.process_type,
-        counter: batchData.mode === 'identical' ? total2 - idx : null,
-      }))
-
-      const result = await window.electronAPI.savePdf(
-        `palm-karofler-${batch.process_type}-batch${batch.id}-${batch.created_at.split('T')[0]}.pdf`
-      )
-      if (!result.canceled && result.filePath) {
-        const pdfBytes = exportLabelsToPDF(labels, {
-          widthMm:  Number(settings.label_width)  || 100,
-          heightMm: Number(settings.label_height) || 75,
-          cols: 2,
-        })
-        await window.electronAPI.writeFile({
-          filePath: result.filePath,
-          buffer: Array.from(new Uint8Array(pdfBytes)),
-        })
-        setSuccess(`PDF saved: ${result.filePath}`)
-        await window.electronAPI.openPath(result.filePath)
-      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -260,17 +225,6 @@ export default function HistoryPage() {
                         {exporting === batch.id
                           ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                           : <Printer className="w-3.5 h-3.5" />
-                        }
-                      </button>
-                      <button
-                        onClick={() => handleExportBatch(batch)}
-                        disabled={exporting === batch.id + '_pdf'}
-                        className="btn-ghost p-1.5"
-                        title="Export PDF"
-                      >
-                        {exporting === batch.id + '_pdf'
-                          ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          : <FileDown className="w-3.5 h-3.5" />
                         }
                       </button>
                       <button

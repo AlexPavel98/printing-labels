@@ -1,28 +1,24 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  Tag, Printer, FileDown, RefreshCw, ChevronDown,
-  AlertCircle, CheckCircle2, Copy, LayoutGrid, List
+  Tag, Printer, RefreshCw,
+  AlertCircle, CheckCircle2, LayoutGrid, List
 } from 'lucide-react'
 import LabelPreview from '../components/LabelPreview'
-import { exportLabelsToPDF, buildPrintHTML } from '../utils/pdfExport'
+import { buildPrintHTML } from '../utils/pdfExport'
 
 const PROCESS_TYPES = [
-  { value: 'R',  label: 'Reception',   code: 'PALM-R-######' },
-  { value: 'S1', label: 'Sorting 1',   code: 'PALM-S1-######' },
-  { value: 'S2', label: 'Sorting 2',   code: 'PALM-S2-######' },
-  { value: 'P',  label: 'Packing',     code: 'PALM-P-######' },
-  { value: 'L',  label: 'Lot / Batch', code: 'PALM-L-######' },
+  { value: 'R',  label: 'Reception'   },
+  { value: 'S1', label: 'Sorting 1'   },
+  { value: 'S2', label: 'Sorting 2'   },
+  { value: 'P',  label: 'Packing'     },
+  { value: 'L',  label: 'Lot / Batch' },
 ]
-
-const BADGE_COLORS = {
-  R: 'badge-green', S1: 'badge-blue', S2: 'badge-purple', P: 'badge-orange', L: 'badge-danger'
-}
 
 function ProcessSelector({ value, onChange, sequences }) {
   return (
     <div className="grid grid-cols-5 gap-2">
       {PROCESS_TYPES.map(pt => {
-        const seq = sequences.find(s => s.process_type === pt.value)
+        const seq    = sequences.find(s => s.process_type === pt.value)
         const nextNum = seq ? seq.last_number + 1 : 1
         const isActive = value === pt.value
         return (
@@ -40,7 +36,7 @@ function ProcessSelector({ value, onChange, sequences }) {
             <div className={`text-xs font-bold uppercase tracking-wide mb-0.5 ${isActive ? 'text-brand-700 dark:text-brand-400' : 'text-slate-500 dark:text-slate-400'}`}>
               {pt.value}
             </div>
-            <div className={`text-sm font-semibold ${isActive ? 'text-brand-900 dark:text-brand-200' : 'text-slate-700 dark:text-slate-300'}`}>
+            <div className={`text-sm font-semibold leading-tight ${isActive ? 'text-brand-900 dark:text-brand-200' : 'text-slate-700 dark:text-slate-300'}`}>
               {pt.label}
             </div>
             <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
@@ -55,24 +51,21 @@ function ProcessSelector({ value, onChange, sequences }) {
 
 export default function GeneratePage() {
   const [sequences, setSequences] = useState([])
-  const [settings, setSettings] = useState({ label_width: '100', label_height: '75' })
+  const [settings, setSettings]   = useState({ label_width: '100', label_height: '75' })
 
-  // Form state
   const [processType, setProcessType] = useState('R')
-  const [supplier, setSupplier] = useState('')
-  const [quantity, setQuantity] = useState(1)
-  const [mode, setMode] = useState('consecutive')
+  const [supplier,    setSupplier]    = useState('')
+  const [quantity,    setQuantity]    = useState(1)
+  const [mode,        setMode]        = useState('consecutive')
 
-  // Results
   const [generatedLabels, setGeneratedLabels] = useState([])
-  const [lastBatch, setLastBatch] = useState(null)
-  const [viewMode, setViewMode] = useState('grid')
+  const [lastBatch,       setLastBatch]       = useState(null)
+  const [viewMode,        setViewMode]        = useState('grid')
 
-  // UI state
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
-  const [exporting, setExporting] = useState(false)
+  const [loading,   setLoading]   = useState(false)
+  const [printing,  setPrinting]  = useState(false)
+  const [error,     setError]     = useState(null)
+  const [success,   setSuccess]   = useState(null)
 
   const printAreaRef = useRef(null)
 
@@ -92,14 +85,8 @@ export default function GeneratePage() {
   useEffect(() => { loadData() }, [loadData])
 
   const handleGenerate = async () => {
-    if (!supplier.trim()) {
-      setError('Please enter a supplier name.')
-      return
-    }
-    if (quantity < 1 || quantity > 1000) {
-      setError('Quantity must be between 1 and 1000.')
-      return
-    }
+    if (!supplier.trim()) { setError('Please enter a supplier name.'); return }
+    if (quantity < 1 || quantity > 1000) { setError('Quantity must be between 1 and 1000.'); return }
 
     setLoading(true)
     setError(null)
@@ -113,7 +100,7 @@ export default function GeneratePage() {
         mode,
       })
 
-      const total = result.codes.length
+      const total  = result.codes.length
       const labels = result.codes.map((code, idx) => ({
         code,
         supplier: supplier.trim(),
@@ -123,7 +110,7 @@ export default function GeneratePage() {
 
       setGeneratedLabels(labels)
       setLastBatch(result)
-      setSuccess(`Generated ${result.codes.length} label${result.codes.length > 1 ? 's' : ''} successfully!`)
+      setSuccess(`${total} label${total > 1 ? 's' : ''} generated — ready to print.`)
       await loadData()
     } catch (err) {
       setError(err.message || 'Failed to generate labels.')
@@ -132,52 +119,33 @@ export default function GeneratePage() {
     }
   }
 
-  const handleExportPDF = async () => {
-    if (!generatedLabels.length) return
-    setExporting(true)
-    try {
-      const result = await window.electronAPI.savePdf(
-        `palm-karofler-${processType}-${new Date().toISOString().split('T')[0]}.pdf`
-      )
-      if (!result.canceled && result.filePath) {
-        const pdfBytes = exportLabelsToPDF(generatedLabels, {
-          widthMm:  Number(settings.label_width)  || 100,
-          heightMm: Number(settings.label_height) || 75,
-          cols: 2,
-        })
-        await window.electronAPI.writeFile({
-          filePath: result.filePath,
-          buffer: Array.from(new Uint8Array(pdfBytes)),
-        })
-        setSuccess(`PDF saved to: ${result.filePath}`)
-        await window.electronAPI.openPath(result.filePath)
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to export PDF.')
-    } finally {
-      setExporting(false)
-    }
-  }
-
   const handlePrint = async () => {
     if (!generatedLabels.length) return
+    setPrinting(true)
     try {
       const html = buildPrintHTML(generatedLabels, {
         widthMm:  Number(settings.label_width)  || 100,
         heightMm: Number(settings.label_height) || 75,
       })
-      await window.electronAPI.printLabels({ html })
+      const result = await window.electronAPI.printLabels({ html })
+      if (result.success) {
+        setSuccess(`Sent ${generatedLabels.length} label${generatedLabels.length > 1 ? 's' : ''} to printer.`)
+      } else {
+        setError(result.error || 'Print failed.')
+      }
     } catch (err) {
       setError(err.message || 'Failed to print.')
+    } finally {
+      setPrinting(false)
     }
   }
 
-  const widthMm = Number(settings.label_width) || 60
-  const heightMm = Number(settings.label_height) || 40
+  const widthMm  = Number(settings.label_width)  || 100
+  const heightMm = Number(settings.label_height) || 75
 
   return (
     <div className="flex h-full min-h-0">
-      {/* Left Panel: Form */}
+      {/* ── Left panel: form ─────────────────────────────────────────── */}
       <div className="w-80 flex-shrink-0 border-r border-slate-200 dark:border-slate-700 flex flex-col overflow-auto">
         <div className="p-5 border-b border-slate-200 dark:border-slate-700">
           <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -185,7 +153,7 @@ export default function GeneratePage() {
             Generate Labels
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Configure and generate barcode labels
+            Configure and print barcode labels
           </p>
         </div>
 
@@ -236,8 +204,8 @@ export default function GeneratePage() {
             <label className="label">Label Mode</label>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { value: 'consecutive', label: 'Consecutive', desc: 'Unique codes per label' },
-                { value: 'identical', label: 'Identical', desc: 'Same code N times' },
+                { value: 'consecutive', label: 'Consecutive', desc: 'Unique code per label' },
+                { value: 'identical',   label: 'Identical',   desc: 'Same code + countdown' },
               ].map(m => (
                 <button
                   key={m.value}
@@ -261,7 +229,7 @@ export default function GeneratePage() {
             </div>
           </div>
 
-          {/* Preview card */}
+          {/* Preview */}
           {supplier && (
             <div>
               <label className="label">Preview</label>
@@ -293,24 +261,29 @@ export default function GeneratePage() {
           )}
         </div>
 
-        {/* Generate button */}
-        <div className="p-5 border-t border-slate-200 dark:border-slate-700">
+        {/* Action buttons */}
+        <div className="p-5 border-t border-slate-200 dark:border-slate-700 space-y-2">
           <button
             onClick={handleGenerate}
             disabled={loading || !supplier.trim()}
             className="btn-primary w-full justify-center"
           >
-            {loading ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Tag className="w-4 h-4" />
-            )}
+            {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Tag className="w-4 h-4" />}
             {loading ? 'Generating…' : `Generate ${quantity} Label${quantity > 1 ? 's' : ''}`}
+          </button>
+
+          <button
+            onClick={handlePrint}
+            disabled={printing || !generatedLabels.length}
+            className="btn-secondary w-full justify-center"
+          >
+            {printing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+            {printing ? 'Sending to printer…' : `Print ${generatedLabels.length || ''} Label${generatedLabels.length !== 1 ? 's' : ''}`}
           </button>
         </div>
       </div>
 
-      {/* Right Panel: Label preview */}
+      {/* ── Right panel: label grid ──────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Toolbar */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0">
@@ -318,8 +291,7 @@ export default function GeneratePage() {
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
               {generatedLabels.length > 0
                 ? `${generatedLabels.length} label${generatedLabels.length > 1 ? 's' : ''} generated`
-                : 'No labels yet'
-              }
+                : 'No labels yet'}
             </span>
             {lastBatch && (
               <span className="text-xs text-slate-400">
@@ -328,49 +300,25 @@ export default function GeneratePage() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* View toggle */}
-            <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-1.5 ${viewMode === 'grid' ? 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400' : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-1.5 ${viewMode === 'list' ? 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400' : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
-
+          {/* View toggle */}
+          <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
             <button
-              onClick={handlePrint}
-              disabled={!generatedLabels.length}
-              className="btn-secondary"
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 ${viewMode === 'grid' ? 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400' : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
             >
-              <Printer className="w-4 h-4" />
-              Print
+              <LayoutGrid className="w-4 h-4" />
             </button>
-
             <button
-              onClick={handleExportPDF}
-              disabled={!generatedLabels.length || exporting}
-              className="btn-primary"
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 ${viewMode === 'list' ? 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400' : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
             >
-              {exporting ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <FileDown className="w-4 h-4" />
-              )}
-              Export PDF
+              <List className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Labels area */}
-        <div className="flex-1 overflow-auto p-5" id="print-area" ref={printAreaRef}>
+        <div className="flex-1 overflow-auto p-5" ref={printAreaRef}>
           {generatedLabels.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center">
               <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
@@ -380,14 +328,11 @@ export default function GeneratePage() {
                 No labels generated yet
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
-                Configure the form on the left and click "Generate Labels" to see your labels here.
+                Configure the form on the left and click "Generate Labels", then "Print Labels".
               </p>
             </div>
           ) : (
-            <div className={viewMode === 'grid'
-              ? 'flex flex-wrap gap-3'
-              : 'flex flex-col gap-2 items-start'
-            }>
+            <div className={viewMode === 'grid' ? 'flex flex-wrap gap-3' : 'flex flex-col gap-2 items-start'}>
               {generatedLabels.map((label, idx) => (
                 <LabelPreview
                   key={idx}
@@ -397,7 +342,7 @@ export default function GeneratePage() {
                   counter={label.counter}
                   widthMm={widthMm}
                   heightMm={heightMm}
-                  scalePx={viewMode === 'list' ? 2.8 : 3.2}
+                  scalePx={viewMode === 'list' ? 1.8 : 2.0}
                 />
               ))}
             </div>
